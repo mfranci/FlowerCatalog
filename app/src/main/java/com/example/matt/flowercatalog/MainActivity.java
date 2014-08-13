@@ -1,6 +1,9 @@
 package com.example.matt.flowercatalog;
 
 import android.app.Activity;
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
@@ -9,11 +12,16 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class MainActivity extends Activity {
    TextView output;
    ProgressBar pb;
+   List<MyTask> tasks;
 
    @Override
    protected void onCreate(Bundle savedInstanceState) {
@@ -25,6 +33,8 @@ public class MainActivity extends Activity {
 
       pb = (ProgressBar) findViewById(R.id.progressBar);
       pb.setVisibility(View.INVISIBLE);
+
+      tasks = new ArrayList<MyTask>();
    }
 
    @Override
@@ -36,27 +46,54 @@ public class MainActivity extends Activity {
    @Override
    public boolean onOptionsItemSelected(MenuItem item) {
       if (item.getItemId() == R.id.action_do_task) {
-         MyTask task = new MyTask();
-         task.execute("Param 1", "Param 2", "Param 3");
+         if(isOnline()){
+            requestData("http://services.hanselandpetal.com/feeds/flowers.json");
+         }else{
+            Toast.makeText(this, "Network error", Toast.LENGTH_LONG).show();
+         }
       }
       return false;
+   }
+
+   private void requestData(String uri) {
+      MyTask task = new MyTask();
+      //task.execute("Param 1", "Param 2", "Param 3"); //proceso serial
+      //task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,"Param 1", "Param 2", "Param 3"); //proceso en paralelo
+      task.execute(uri); //proceso serial
    }
 
    protected void updateDisplay(String message) {
       output.append(message + "\n");
    }
 
+   /**
+    * Verifico si está online
+    * @return
+    */
+   protected boolean isOnline(){
+      ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+      NetworkInfo netInfo = cm.getActiveNetworkInfo();
+      if( netInfo != null && netInfo.isConnectedOrConnecting()){
+         return true;
+      }else{
+         return false;
+      }
+   }
    private class MyTask extends AsyncTask<String, String, String>{
 
       @Override
       protected void onPreExecute() {
          updateDisplay("Starting task");
-         pb.setVisibility(View.VISIBLE);
+
+         if (tasks.size() == 0){
+            pb.setVisibility(View.VISIBLE);
+         }
+         tasks.add(this);
       }
 
       @Override
       protected String doInBackground(String... params) {
-         for (int i = 0; i < params.length; i++){
+         /*for (int i = 0; i < params.length; i++){
             publishProgress("Working with " + params[i]);
 
             try {
@@ -64,14 +101,21 @@ public class MainActivity extends Activity {
             } catch (InterruptedException e) {
                e.printStackTrace();
             }
-         }
-         return "Task complete";
+         }*/
+
+         String content = HttpManager.getData(params[0]);
+         return content;
       }
 
       @Override
       protected void onPostExecute(String s) {
          updateDisplay(s);
-         pb.setVisibility(View.INVISIBLE);
+
+         tasks.remove(this); //para que permanezca el progress.
+         if (tasks.size() == 0){
+            pb.setVisibility(View.INVISIBLE);
+         }
+
       }
 
       @Override
