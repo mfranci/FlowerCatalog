@@ -9,9 +9,6 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Created by matt on 27/08/2014.
- */
 public class FlowerXMLParser {
 
    public static List<Flower> parseFeed(String content) {
@@ -87,4 +84,5 @@ public class FlowerXMLParser {
 
 
    }
+
 }

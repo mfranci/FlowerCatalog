@@ -15,7 +15,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.matt.flowercatalog.model.Flower;
-import com.example.matt.flowercatalog.parsers.FlowerXMLParser;
+import com.example.matt.flowercatalog.parsers.FlowerJSONParser;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,8 +52,9 @@ public class MainActivity extends Activity {
    public boolean onOptionsItemSelected(MenuItem item) {
       if (item.getItemId() == R.id.action_do_task) {
          if(isOnline()){
+            requestData("http://services.hanselandpetal.com/secure/flowers.json");
             //requestData("http://services.hanselandpetal.com/feeds/flowers.json");
-            requestData("http://services.hanselandpetal.com/feeds/flowers.xml");
+            //requestData("http://services.hanselandpetal.com/feeds/flowers.xml");
          }else{
             Toast.makeText(this, "Network error", Toast.LENGTH_LONG).show();
          }
@@ -113,20 +114,26 @@ public class MainActivity extends Activity {
             }
          }*/
 
-         String content = HttpManager.getData(params[0]);
+         String content = HttpManager.getData(params[0], "feeduser", "feedpassword");
          return content;
       }
 
       @Override
       protected void onPostExecute(String s) {
-         flowerList = FlowerXMLParser.parseFeed(s);
-
-         updateDisplay();
-
          tasks.remove(this); //para que permanezca el progress.
          if (tasks.size() == 0){
             pb.setVisibility(View.INVISIBLE);
          }
+
+         if(s == null){
+            Toast.makeText(MainActivity.this, "Can´t connect to webservice", Toast.LENGTH_SHORT).show();
+            return;
+         }
+         //flowerList = FlowerXMLParser.parseFeed(s);
+         flowerList = FlowerJSONParser.parseFeed(s);
+
+         updateDisplay();
+
 
       }
 
