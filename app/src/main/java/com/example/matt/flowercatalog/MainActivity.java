@@ -1,12 +1,11 @@
 package com.example.matt.flowercatalog;
 
-import android.app.Activity;
+import android.app.ListActivity;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.text.method.ScrollingMovementMethod;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -21,25 +20,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class MainActivity extends Activity {
+public class MainActivity extends ListActivity {
    TextView output;
    ProgressBar pb;
    List<MyTask> tasks;
 
    List<Flower> flowerList;
 
+   public static final String PHOTOS_BASE_URL = "http://services.hanselandpetal.com/photos/";
+
    @Override
    protected void onCreate(Bundle savedInstanceState) {
       super.onCreate(savedInstanceState);
       setContentView(R.layout.activity_main);
 
-      output = (TextView) findViewById(R.id.textView);
-      output.setMovementMethod(new ScrollingMovementMethod());
-
-      pb = (ProgressBar) findViewById(R.id.progressBar);
+      pb = (ProgressBar) findViewById(R.id.progressBar1);
       pb.setVisibility(View.INVISIBLE);
 
-      tasks = new ArrayList<MyTask>();
+      tasks = new ArrayList<>();
    }
 
    @Override
@@ -50,13 +48,13 @@ public class MainActivity extends Activity {
 
    @Override
    public boolean onOptionsItemSelected(MenuItem item) {
-      if (item.getItemId() == R.id.action_do_task) {
-         if(isOnline()){
+      if (item.getItemId() == R.id.action_get_data) {
+         if (isOnline()) {
             requestData("http://services.hanselandpetal.com/secure/flowers.json");
             //requestData("http://services.hanselandpetal.com/feeds/flowers.json");
             //requestData("http://services.hanselandpetal.com/feeds/flowers.xml");
-         }else{
-            Toast.makeText(this, "Network error", Toast.LENGTH_LONG).show();
+         } else {
+            Toast.makeText(this, "Network isn't available", Toast.LENGTH_LONG).show();
          }
       }
       return false;
@@ -70,11 +68,8 @@ public class MainActivity extends Activity {
    }
 
    protected void updateDisplay() {
-      if (flowerList != null){
-         for (Flower flower : flowerList){
-            output.append(flower.getName()  + "\n");
-         }
-      }
+      com.example.matt.flowercatalog.FlowerAdapter adapter = new com.example.matt.flowercatalog.FlowerAdapter(this, R.layout.item_flower, flowerList);
+      setListAdapter(adapter);
    }
 
    /**
@@ -90,7 +85,13 @@ public class MainActivity extends Activity {
          return false;
       }
    }
-   private class MyTask extends AsyncTask<String, String, String>{
+
+   /**
+    * Param 1 -> input type
+    * Param 2 -> progress information
+    * Param 3 -> return data type
+    */
+   private class MyTask extends AsyncTask<String, String, List<Flower>>{
 
       @Override
       protected void onPreExecute() {
@@ -103,38 +104,27 @@ public class MainActivity extends Activity {
       }
 
       @Override
-      protected String doInBackground(String... params) {
-         /*for (int i = 0; i < params.length; i++){
-            publishProgress("Working with " + params[i]);
-
-            try {
-               Thread.sleep(500);
-            } catch (InterruptedException e) {
-               e.printStackTrace();
-            }
-         }*/
-
+      protected List<Flower> doInBackground(String... params) {
          String content = HttpManager.getData(params[0], "feeduser", "feedpassword");
-         return content;
+         flowerList = FlowerJSONParser.parseFeed(content);
+
+         return flowerList;
       }
 
-      @Override
-      protected void onPostExecute(String s) {
+      protected void onPostExecute(List<Flower> result) {
+
          tasks.remove(this); //para que permanezca el progress.
-         if (tasks.size() == 0){
+         if (tasks.size() == 0) {
             pb.setVisibility(View.INVISIBLE);
          }
 
-         if(s == null){
-            Toast.makeText(MainActivity.this, "Can´t connect to webservice", Toast.LENGTH_SHORT).show();
+         if (result == null) {
+            Toast.makeText(MainActivity.this, "Web service not available", Toast.LENGTH_LONG).show();
             return;
          }
-         //flowerList = FlowerXMLParser.parseFeed(s);
-         flowerList = FlowerJSONParser.parseFeed(s);
 
+         flowerList = result;
          updateDisplay();
-
-
       }
 
       @Override

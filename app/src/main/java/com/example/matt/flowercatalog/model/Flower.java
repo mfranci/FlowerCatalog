@@ -1,5 +1,7 @@
 package com.example.matt.flowercatalog.model;
 
+import android.graphics.Bitmap;
+
 /**
  * Created by matt on 27/08/2014.
  */
@@ -10,6 +12,7 @@ public class Flower {
    private String instructions;
    private double price;
    private String photo;
+   private Bitmap bitmap;
 
    public int getProductId() {
       return productId;
@@ -57,5 +60,13 @@ public class Flower {
 
    public void setPhoto(String photo) {
       this.photo = photo;
+   }
+
+   public Bitmap getBitmap() {
+      return bitmap;
+   }
+
+   public void setBitmap(Bitmap bitmap) {
+      this.bitmap = bitmap;
    }
 }
